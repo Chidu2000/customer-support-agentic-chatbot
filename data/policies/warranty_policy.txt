@@ -1,0 +1,29 @@
+ACME Corp Warranty Policy (Effective June 2026)
+
+1. Coverage
+Most ACME Corp physical products include a 12-month limited warranty from the original purchase date.
+The warranty covers manufacturing defects, hardware failures under normal use, and missing parts reported within 14 days of delivery.
+
+2. Extended Coverage
+Gold tier customers receive 18 months of warranty coverage.
+Platinum tier customers receive 24 months of warranty coverage and priority replacement review.
+
+3. Exclusions
+The warranty does not cover:
+- Damage from misuse, accidents, unauthorized repairs, or improper installation
+- Normal wear and tear, cosmetic scratches, or consumable accessories
+- Products without a valid order number or proof of purchase
+- Items purchased from unauthorized resellers
+
+4. Resolution Options
+After review, ACME Corp may offer troubleshooting, replacement parts, a replacement product, store credit, or a refund when required by applicable policy.
+Replacement products may be refurbished, but must meet the same functional standard as the original item.
+
+5. Claim Requirements
+Customers must contact support with the order number, product name, issue description, and clear photos or video when relevant.
+Support may request basic troubleshooting before approving a warranty claim.
+
+6. Processing Time
+Standard warranty claims are reviewed within 3-5 business days.
+Gold and Platinum tier claims are reviewed within 1-2 business days.
+Approved replacements usually ship within 2 business days after claim approval.

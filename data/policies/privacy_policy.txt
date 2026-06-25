@@ -1,0 +1,6 @@
+ACME Corp Privacy Policy Summary
+
+We collect name, email, phone, shipping address, and payment details to fulfill orders.
+Support ticket history is retained for 24 months to improve service quality.
+We do not sell personal data to third parties.
+Customers may request data export or deletion by emailing privacy@acme.example.com.

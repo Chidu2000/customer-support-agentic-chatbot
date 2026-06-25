@@ -1,0 +1,74 @@
+"""Sample policy text used for seeding the knowledge base."""
+
+from pathlib import Path
+
+from src.config import settings
+
+REFUND_POLICY = """ACME Corp Refund Policy (Effective January 2025)
+
+1. Eligibility
+Customers may request a refund within 30 days of purchase for most physical products.
+Digital products are refundable within 14 days if not downloaded or activated.
+
+2. Full Refunds
+Full refunds are issued when:
+- The product arrived damaged or defective
+- The wrong item was shipped
+- The order was cancelled before shipment
+- A duplicate charge occurred
+
+3. Partial Refunds
+Partial refunds may apply for:
+- Opened but unused items returned within 30 days (15% restocking fee may apply)
+- Items missing non-essential accessories
+
+4. Non-Refundable Items
+- Gift cards and downloadable software after activation
+- Custom or personalized products
+- Items returned after 30 days
+
+5. Processing Time
+Approved refunds are processed within 5-7 business days to the original payment method.
+Bank processing may take an additional 3-5 business days.
+
+6. How to Request
+Contact support with order number, reason for refund, and photos if the item is damaged.
+Gold and Platinum tier customers receive priority refund review within 24 hours.
+"""
+
+SHIPPING_POLICY = """ACME Corp Shipping Policy
+
+Standard Shipping: 5-7 business days (free on orders over $50)
+Express Shipping: 2-3 business days ($12.99)
+Overnight Shipping: Next business day ($24.99, order by 2 PM ET)
+
+International orders may take 10-21 business days. Customers are responsible for customs fees.
+
+Lost or delayed packages: Contact support after 7 days (standard) or 3 days (express).
+We will investigate with the carrier and offer replacement or refund if the package is confirmed lost.
+"""
+
+PRIVACY_POLICY = """ACME Corp Privacy Policy Summary
+
+We collect name, email, phone, shipping address, and payment details to fulfill orders.
+Support ticket history is retained for 24 months to improve service quality.
+We do not sell personal data to third parties.
+Customers may request data export or deletion by emailing privacy@acme.example.com.
+"""
+
+
+def write_sample_policies() -> list[Path]:
+    policies_dir = Path(settings.policies_dir)
+    policies_dir.mkdir(parents=True, exist_ok=True)
+
+    files = {
+        "refund_policy.txt": REFUND_POLICY,
+        "shipping_policy.txt": SHIPPING_POLICY,
+        "privacy_policy.txt": PRIVACY_POLICY,
+    }
+    paths: list[Path] = []
+    for filename, content in files.items():
+        path = policies_dir / filename
+        path.write_text(content, encoding="utf-8")
+        paths.append(path)
+    return paths
