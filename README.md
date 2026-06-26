@@ -26,7 +26,7 @@ A **LangGraph router** classifies every question and delegates it to the right a
 
 ## Video Walkthrough
 
-[https://vimeo.com/1168610124/7202616c54?share=copy&fl=sv&fe=ci](https://vimeo.com/1168610124/7202616c54?share=copy&fl=sv&fe=ci)
+[https://vimeo.com/1204729812?share=copy&fl=sv&fe=ci](https://vimeo.com/1204729812?share=copy&fl=sv&fe=ci)
 
 ---
 
