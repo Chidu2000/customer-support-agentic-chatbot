@@ -202,23 +202,15 @@ What to expect:
 - Policy answers include a **📚 Sources** expander citing the document and page.
 - Chat history is maintained within the session for follow-up questions.
 
-### Run the MCP server
+### MCP server (optional)
+
+The project includes a FastMCP server (`src/mcp_server/server.py`) that exposes the same multi-agent backend as callable tools for any MCP-compatible client (e.g. Cursor IDE). It is not required to run the Streamlit UI.
 
 ```bash
 python src/mcp_server/server.py
 ```
 
-The MCP server exposes the following tools to any MCP-compatible client (e.g. Cursor):
-
-| Tool | Description |
-|------|-------------|
-| `mcp_search_customer` | Find customers by name, email, or ID |
-| `mcp_get_customer_profile_and_tickets` | Full profile + ticket history |
-| `mcp_get_support_ticket` | Single ticket by ID |
-| `mcp_search_policy_documents` | Semantic search over indexed policies |
-| `mcp_ingest_policy_document` | Index a PDF or text file |
-| `mcp_list_policy_sources` | List all indexed document sources |
-| `mcp_chat` | Full routed multi-agent Q&A |
+Tools exposed: `mcp_search_customer`, `mcp_get_customer_profile_and_tickets`, `mcp_get_support_ticket`, `mcp_search_policy_documents`, `mcp_ingest_policy_document`, `mcp_list_policy_sources`, `mcp_chat`.
 
 ---
 
@@ -235,13 +227,3 @@ The MCP server exposes the following tools to any MCP-compatible client (e.g. Cu
 
 ---
 
-## Troubleshooting
-
-| Error | Fix |
-|-------|-----|
-| `ModuleNotFoundError` on any import | Run via `.venv\Scripts\streamlit run ...` or activate the venv first |
-| `Missing credentials / OPENAI_API_KEY` | Ensure `.env` exists and contains your key; never hardcode it in `config.py` |
-| `429 insufficient_quota` | Your OpenAI project has no available quota / billing |
-| Knowledge base empty on first launch | Click **Load sample policies** in the sidebar, or upload your own files |
-| UI shows stale state after code changes | Restart Streamlit (`Ctrl+C` then rerun) |
-| Chroma index out of sync | Use the **🗑️ Clear index** button in the sidebar and re-upload |
