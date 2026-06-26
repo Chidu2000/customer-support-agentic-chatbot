@@ -7,6 +7,7 @@ from langgraph.prebuilt import create_react_agent
 
 from src.llm.factory import get_chat_model
 from src.tools.support_tools import RAG_TOOLS, SQL_TOOLS
+from src.vectorstore.chroma_store import search_policies
 
 Route = Literal["sql", "rag", "hybrid"]
 
@@ -17,6 +18,7 @@ class AgentState(TypedDict):
     sql_context: str
     rag_context: str
     final_answer: str
+    rag_sources: list[dict]  # [{source_file, page}] for citation display
 
 
 ROUTER_PROMPT = """You route customer-support questions for a multi-agent assistant.
@@ -83,13 +85,30 @@ def run_sql_agent(state: AgentState) -> AgentState:
     }
 
 
+def _collect_rag_sources(question: str) -> list[dict]:
+    """Return deduplicated source citations for the retrieved chunks."""
+    docs = search_policies(question, k=4)
+    seen: set[tuple] = set()
+    sources: list[dict] = []
+    for doc in docs:
+        source_file = doc.metadata.get("source_file") or doc.metadata.get("source", "unknown")
+        page = doc.metadata.get("page")
+        key = (source_file, page)
+        if key not in seen:
+            seen.add(key)
+            sources.append({"source_file": source_file, "page": page})
+    return sources
+
+
 def run_rag_agent(state: AgentState) -> AgentState:
     llm = get_chat_model()
     agent = create_react_agent(llm, RAG_TOOLS, prompt=SystemMessage(content=RAG_AGENT_PROMPT))
     result = agent.invoke({"messages": state["messages"]})
     answer = result["messages"][-1].content
+    question = _latest_user_text(state["messages"])
     return {
         "rag_context": str(answer),
+        "rag_sources": _collect_rag_sources(question),
         "messages": [AIMessage(content=str(answer))],
     }
 
@@ -104,6 +123,7 @@ def run_hybrid_agents(state: AgentState) -> AgentState:
 
     sql_context = str(sql_result["messages"][-1].content)
     rag_context = str(rag_result["messages"][-1].content)
+    rag_sources = _collect_rag_sources(_latest_user_text(state["messages"]))
 
     synthesis = llm.invoke(
         [
@@ -121,6 +141,7 @@ def run_hybrid_agents(state: AgentState) -> AgentState:
     return {
         "sql_context": sql_context,
         "rag_context": rag_context,
+        "rag_sources": rag_sources,
         "final_answer": final_answer,
         "messages": [AIMessage(content=final_answer)],
     }
@@ -176,6 +197,7 @@ def ask(question: str, history: list[BaseMessage] | None = None) -> dict:
             "route": "sql",
             "sql_context": "",
             "rag_context": "",
+            "rag_sources": [],
             "final_answer": "",
         }
     )
@@ -184,4 +206,5 @@ def ask(question: str, history: list[BaseMessage] | None = None) -> dict:
         "route": result.get("route", "sql"),
         "sql_context": result.get("sql_context", ""),
         "rag_context": result.get("rag_context", ""),
+        "rag_sources": result.get("rag_sources", []),
     }
