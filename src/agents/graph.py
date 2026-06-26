@@ -23,10 +23,22 @@ class AgentState(TypedDict):
 
 ROUTER_PROMPT = """You route customer-support questions for a multi-agent assistant.
 
-Choose exactly one route:
-- sql: questions about customer profiles, support tickets, account details, ticket status
-- rag: questions about company policies, refunds, shipping, privacy, terms, uploaded documents
-- hybrid: questions needing BOTH customer/ticket data AND policy/document context
+Routes:
+- sql   → question is ONLY about a specific customer, their profile, account, plan, or support tickets.
+          Examples: "Show me Ema's profile", "What tickets does Marcus have?"
+
+- rag   → question is ONLY about a company policy, rule, or document (no specific customer mentioned).
+          Examples: "What is the refund policy?", "How does shipping work?"
+
+- hybrid → question mentions a specific customer/person AND also asks about a policy, plan, or eligibility.
+           ALWAYS choose hybrid when a customer name appears alongside a policy topic.
+           Examples:
+             "Priya wants to know about the warranty policy for her plan"
+             "Can Ema get a refund for her open ticket?"
+             "Does Marcus qualify for express shipping?"
+             "What plan is David on and what are the cancellation terms?"
+
+When in doubt between rag and hybrid, choose hybrid if any customer name or account is mentioned.
 
 Reply with only one word: sql, rag, or hybrid."""
 
@@ -53,9 +65,40 @@ def _latest_user_text(messages: list[BaseMessage]) -> str:
     return ""
 
 
+_POLICY_KEYWORDS = {
+    "policy", "refund", "return", "shipping", "warranty", "privacy",
+    "terms", "cancellation", "guarantee", "coverage", "plan", "eligible",
+    "eligib", "qualify", "entitle",
+}
+
+_CUSTOMER_SIGNALS = {
+    "customer", "client", "user", "account", "she", "he", "they",
+    "her", "his", "their", "ticket", "profile",
+}
+
+
+def _has_named_entity(text: str) -> bool:
+    """Heuristic: any capitalised word that isn't sentence-start is likely a name."""
+    words = text.split()
+    # A word is a candidate name if it starts with a capital and is not the first word
+    return any(w[0].isupper() and i > 0 for i, w in enumerate(words) if w.isalpha())
+
+
+def _rule_based_route(question: str) -> Route | None:
+    """Safety-net: override LLM if the pattern is unambiguous."""
+    q = question.lower()
+    has_policy = any(kw in q for kw in _POLICY_KEYWORDS)
+    has_customer = any(kw in q for kw in _CUSTOMER_SIGNALS) or _has_named_entity(question)
+
+    if has_policy and has_customer:
+        return "hybrid"
+    return None  # let LLM decision stand
+
+
 def route_query(state: AgentState) -> AgentState:
     llm = get_chat_model(temperature=0)
     question = _latest_user_text(state["messages"])
+
     response = llm.invoke(
         [
             SystemMessage(content=ROUTER_PROMPT),
@@ -63,14 +106,18 @@ def route_query(state: AgentState) -> AgentState:
         ]
     )
     route_text = str(response.content).strip().lower()
+
     if "hybrid" in route_text:
-        route: Route = "hybrid"
-    elif "rag" in route_text or "policy" in route_text:
-        route = "rag"
-    elif "sql" in route_text or "customer" in route_text or "ticket" in route_text:
-        route = "sql"
+        llm_route: Route = "hybrid"
+    elif "rag" in route_text:
+        llm_route = "rag"
+    elif "sql" in route_text:
+        llm_route = "sql"
     else:
-        route = "rag" if any(word in question.lower() for word in ("policy", "refund", "shipping", "privacy")) else "sql"
+        llm_route = "rag" if any(kw in question.lower() for kw in _POLICY_KEYWORDS) else "sql"
+
+    # Rule-based override catches cases where the LLM under-routes to rag/sql
+    route = _rule_based_route(question) or llm_route
     return {"route": route}
 
 
