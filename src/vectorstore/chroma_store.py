@@ -39,6 +39,16 @@ def search_policies(query: str, k: int = 4) -> list[Document]:
     return store.similarity_search(query, k=k)
 
 
+def clear_collection() -> int:
+    """Delete all documents from the vector store. Returns count removed."""
+    store = get_vector_store()
+    count = store._collection.count()
+    if count:
+        all_ids = store._collection.get(include=[])["ids"]
+        store._collection.delete(ids=all_ids)
+    return count
+
+
 def list_indexed_sources() -> list[str]:
     store = get_vector_store()
     if store._collection.count() == 0:

@@ -10,8 +10,9 @@ if str(ROOT) not in sys.path:
 
 from src.agents.graph import ask
 from src.config import settings
+from src.data.sample_policies import write_sample_policies
 from src.ingestion.pdf_processor import ingest_file
-from src.vectorstore.chroma_store import add_documents, list_indexed_sources
+from src.vectorstore.chroma_store import add_documents, clear_collection, list_indexed_sources
 
 st.set_page_config(page_title="Customer Support Assistant", page_icon="💬", layout="wide")
 
@@ -44,32 +45,59 @@ def render_citations(sources: list[dict]) -> None:
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Setup")
-    st.write(f"Model: `{settings.openai_model}`")
-    st.write(f"DB: `{settings.database_url}`")
+    st.header("⚙️ Setup")
+    st.caption(f"Model: `{settings.openai_model}`")
 
+    # ── Upload ────────────────────────────────────────────────────────────────
     st.divider()
-    st.subheader("Upload policy document")
-    uploaded = st.file_uploader("PDF or text policy", type=["pdf", "txt", "md"])
+    st.subheader("📤 Upload policy document")
+    st.caption("Upload a PDF or text file to add it to the knowledge base.")
+    uploaded = st.file_uploader("Choose a file", type=["pdf", "txt", "md"], label_visibility="collapsed")
     if uploaded is not None:
         policies_dir = Path(settings.policies_dir)
         policies_dir.mkdir(parents=True, exist_ok=True)
         save_path = policies_dir / uploaded.name
         save_path.write_bytes(uploaded.getvalue())
         try:
-            chunks = ingest_file(save_path)
-            count = add_documents(chunks)
-            st.success(f"Ingested {count} chunks from {uploaded.name}")
+            with st.spinner(f"Indexing {uploaded.name}…"):
+                chunks = ingest_file(save_path)
+                count = add_documents(chunks)
+            st.success(f"✅ Indexed {count} chunks from **{uploaded.name}**")
+            st.rerun()
         except Exception as exc:
             st.error(f"Ingestion failed: {exc}")
 
+    # ── Knowledge base status ─────────────────────────────────────────────────
+    st.divider()
+    st.subheader("📚 Knowledge base")
     sources = list_indexed_sources()
-    st.subheader("Indexed policies")
     if sources:
         for source in sources:
-            st.write(f"- {source}")
+            st.markdown(f"- `{source}`")
     else:
-        st.info("No policies indexed yet. Upload a file or run `python scripts/ingest_policies.py`.")
+        st.info("No documents indexed yet.\nUpload a file above or load the sample policies below.")
+
+    # ── Sample policies shortcut ──────────────────────────────────────────────
+    st.divider()
+    st.subheader("🧪 Demo data")
+    st.caption("Load built-in sample policies (refund, shipping, privacy, warranty).")
+    if st.button("Load sample policies", use_container_width=True):
+        with st.spinner("Writing and indexing sample policies…"):
+            try:
+                paths = write_sample_policies()
+                total = 0
+                for path in paths:
+                    chunks = ingest_file(path)
+                    total += add_documents(chunks)
+                st.success(f"✅ Loaded {len(paths)} sample policies ({total} chunks)")
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Failed: {exc}")
+
+    if sources and st.button("🗑️ Clear index", use_container_width=True, type="secondary"):
+        removed = clear_collection()
+        st.warning(f"Cleared {removed} chunks from the index.")
+        st.rerun()
 
 # ── Chat history ──────────────────────────────────────────────────────────────
 st.title("Customer Support Multi-Agent Assistant")
